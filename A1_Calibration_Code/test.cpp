@@ -4,6 +4,8 @@
 #include <string>
 #include <sstream>
 
+#include "3rd_party/glew/include/GL/wglew.h"
+
 struct coord {
     std::vector<std::vector<double>> pw; // Changed to double for precision
     std::vector<std::vector<double>> pc;
@@ -26,12 +28,12 @@ std::vector<double> read_file(std::string path) {
     return all_data;
 }
 
-int main() {
-    // 1. Catch the data as doubles
-    std::string myPath = R"(D:\TU Delft\GEO1016 Photogrametry\Assignment_n_1\Photogrametry_assg_1\A1_Calibration_Code\resources\data\test_data_1(6_points)-normal.txt)";
-    std::vector<double> flat_data = read_file(myPath);
 
-    coord result;
+
+coord flat_to_matrix(std::vector<double> flat_data) {
+    // 1. Catch the data as doubles
+
+    coord result; // This specify the result format of the data.
 
     // 2. Loop through the flat vector 5 elements at a time
     for (size_t i = 0; i + 4 < flat_data.size(); i += 5) {
@@ -44,11 +46,19 @@ int main() {
         result.pc.push_back(point2D);
     }
 
-    // --- Verification ---
-    if (!result.pw.empty()) {
-        std::cout << "Successfully processed " << result.pw.size() << " points.\n";
-        std::cout << "First 3D Point: " << result.pw[0][0] << ", " << result.pw[0][1] << ", " << result.pw[0][2] << "\n";
-    }
+    return result;
+}
 
-    return 0;
+
+
+int main()
+{
+    std::string myPath = R"(D:\TU Delft\GEO1016 Photogrametry\Assignment_n_1\Photogrametry_assg_1\A1_Calibration_Code\resources\data\test_data_1(6_points)-normal.txt)";
+    std::vector<double> flat_data = read_file(myPath);
+
+    coord coord_result  = flat_to_matrix(flat_data);
+
+    std::vector<double> point3D = coord_result.pw
+
+    std::vector<double> point2D = coord_result.pc
 }
