@@ -13,7 +13,7 @@ add_executable(${PROJECT_NAME}
         matrix_algo.h
         matrix_algo.cpp
         vector.h
-        )
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${EASY3D_INCLUDE_DIR})
 

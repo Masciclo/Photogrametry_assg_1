@@ -79,7 +79,59 @@ Matrix vector_to_matrix(std::vector<std::vector<double>> pw, std::vector<std::ve
     return L;
 }
 
+Matrix solve_M_from_P(const Matrix& P) {
+    // P should be (2n x 12)
+    if (P.cols() != 12) {
+        std::cerr << "Expected P to have 12 columns, got " << P.cols() << "\n";
+        return Matrix(); // empty matrix as "error"
+    }
 
+    const int r = P.rows();
+    const int c = P.cols(); // 12
+
+    Matrix U(r, r, 0.0);
+    Matrix S(r, c, 0.0);
+    Matrix V(c, c, 0.0);
+
+    svd_decompose(P, U, S, V);
+
+    // Solution is last column of V (smallest singular value)
+    Vector m = V.get_column(V.cols() - 1); // length 12
+
+    // Reshape m -> 3x4 projection matrix M
+    Matrix M(3, 4, 0.0);
+    M(0,0) = m[0];   M(0,1) = m[1];   M(0,2) = m[2];   M(0,3) = m[3];
+    M(1,0) = m[4];   M(1,1) = m[5];   M(1,2) = m[6];   M(1,3) = m[7];
+    M(2,0) = m[8];   M(2,1) = m[9];   M(2,2) = m[10];  M(2,3) = m[11];
+
+    return M;
+}
+
+int check_projection(const coord& data, const Matrix& M) {
+    double tol = 0.1;
+    int ok = 0;
+
+    for (int i = 0; i < (int)data.pw.size(); i++) {
+        double X = data.pw[i][0], Y = data.pw[i][1], Z = data.pw[i][2];
+        double u = data.pc[i][0], v = data.pc[i][1];
+
+        double x = M(0,0)*X + M(0,1)*Y + M(0,2)*Z + M(0,3);
+        double y = M(1,0)*X + M(1,1)*Y + M(1,2)*Z + M(1,3);
+        double w = M(2,0)*X + M(2,1)*Y + M(2,2)*Z + M(2,3);
+
+        if (w == 0.0) continue;   // super simple safety check
+
+        double up = x / w;
+        double vp = y / w;
+
+        if (std::abs(up - u) <= tol && std::abs(vp - v) <= tol) {
+            ok++;
+        }
+    }
+
+    std::cout << "OK points: " << ok << " / " << data.pw.size() << "\n";
+    return ok;
+}
 
 
 int main()
@@ -94,17 +146,11 @@ int main()
 
     std::vector<std::vector<double>> point2D = coord_result.pc;
 
-    Matrix m = vector_to_matrix(coord_result.pw, coord_result.pc);
-    std::cout << m << std::endl;
+    Matrix P = vector_to_matrix(coord_result.pw, coord_result.pc);
+    std::cout << P << std::endl;
 
-    // P is (2n x 12)
-    const int r = m.rows();
-    const int c = m.cols(); // should be 12
+    Matrix M = solve_M_from_P(P);
 
-    Matrix U(r, r, 0.0);
-    Matrix S(r, c, 0.0);
-    Matrix V(c, c, 0.0);
-
-    svd_decompose(m, U, S, V);
+    check_projection(coord_result, M);
 
 }
