@@ -84,7 +84,7 @@ Matrix vector_to_matrix(std::vector<std::vector<double>> pw, std::vector<std::ve
 
 int main()
 {
-    std::string myPath = R"(D:\TU Delft\GEO1016 Photogrametry\Assignment_n_1\Photogrametry_assg_1\A1_Calibration_Code\resources\data\test_data_1(6_points)-normal.txt)";
+    std::string myPath = R"(D:\TU Delft\GEO1016 Photogrametry\Photogrametry_assg_1\A1_Calibration_Code\resources\data\test_data_1(6_points)-normal.txt)";
     std::vector<double> flat_data = read_file(myPath);
 
     coord coord_result  = flat_to_matrix(flat_data);
