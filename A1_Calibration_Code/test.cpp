@@ -107,9 +107,8 @@ Matrix solve_M_from_P(const Matrix& P) {
     return M;
 }
 
-int check_projection(const coord& data, const Matrix& M) {
+bool check_projection_simple(const coord& data, const Matrix& M) {
     double tol = 0.1;
-    int ok = 0;
 
     for (int i = 0; i < (int)data.pw.size(); i++) {
         double X = data.pw[i][0], Y = data.pw[i][1], Z = data.pw[i][2];
@@ -119,18 +118,100 @@ int check_projection(const coord& data, const Matrix& M) {
         double y = M(1,0)*X + M(1,1)*Y + M(1,2)*Z + M(1,3);
         double w = M(2,0)*X + M(2,1)*Y + M(2,2)*Z + M(2,3);
 
-        if (w == 0.0) continue;   // super simple safety check
+        if (std::abs(w) < 1e-12) return false;   // can't project -> fail
 
         double up = x / w;
         double vp = y / w;
 
-        if (std::abs(up - u) <= tol && std::abs(vp - v) <= tol) {
-            ok++;
+        if (std::abs(up - u) > tol || std::abs(vp - v) > tol) {
+            return false; // as soon as one point is bad -> fail
         }
     }
 
+    return true; // all points were within tolerance
+
+
+
+
+
     std::cout << "OK points: " << ok << " / " << data.pw.size() << "\n";
     return ok;
+}
+
+bool intrinsics_from_M(const Matrix& M,
+                       double& fx, double& fy, double& cx, double& cy, double& s,
+                       double& rho)
+{
+    // a1,a2,a3 are rows of A = left 3x3 of M
+    Vector3D a1(M(0,0), M(0,1), M(0,2));
+    Vector3D a2(M(1,0), M(1,1), M(1,2));
+    Vector3D a3(M(2,0), M(2,1), M(2,2));
+
+    double len_a3 = a3.length();
+    if (len_a3 < 1e-12) return false;
+
+    rho = 1.0 / len_a3;              // choose + sign first
+
+    cx = (rho*rho) * dot(a1, a3);
+    cy = (rho*rho) * dot(a2, a3);
+
+    Vector a1xa3 = cross(a1, a3);
+    Vector a2xa3 = cross(a2, a3);
+
+    double n1 = a1xa3.length();
+    double n2 = a2xa3.length();
+    if (n1 < 1e-12 || n2 < 1e-12) return false; //Prevent divison by zero
+
+    double cos_theta = - dot(a1xa3, a2xa3) / (n1*n2);
+    if (cos_theta >  1.0) cos_theta =  1.0;
+    if (cos_theta < -1.0) cos_theta = -1.0;
+
+    double theta = std::acos(cos_theta);
+    double sin_theta = std::sin(theta);
+    if (std::abs(sin_theta) < 1e-12) return false;
+
+    fx = (rho*rho) * n1 * sin_theta;        // alpha
+    fy = (rho*rho) * n2 * sin_theta;        // beta
+    s  = -fx * (cos_theta / sin_theta);     // s
+
+    return true;
+}
+
+bool extrinsics_from_M(const Matrix& M,
+                       double fx, double fy, double cx, double cy, double s, double rho,
+                       Matrix33& R, Vector3D& t)
+{
+    Vector3D a2(M(1,0), M(1,1), M(1,2));
+    Vector3D a3(M(2,0), M(2,1), M(2,2));
+    Vector3D b (M(0,3), M(1,3), M(2,3));
+
+    // r1
+    Vector a2xa3 = cross(a2, a3);
+    double len = a2xa3.length();
+    if (len < 1e-12) return false;
+    Vector3D r1(a2xa3[0]/len, a2xa3[1]/len, a2xa3[2]/len);
+
+    // r3, r2
+    Vector3D r3 = rho * a3;
+    Vector r3xr1 = cross(r3, r1);
+    Vector3D r2(r3xr1[0], r3xr1[1], r3xr1[2]);
+
+    // Put r1,r2,r3 as rows (since a1,a2,a3 were rows)
+    R = Matrix33(
+        r1.x, r1.y, r1.z,
+        r2.x, r2.y, r2.z,
+        r3.x, r3.y, r3.z
+    );
+
+    // t = rho * K^{-1} * b
+    // Solve K * x = b by back-substitution
+    double x3 = b.z;
+    double x2 = (b.y - cy * x3) / fy;
+    double x1 = (b.x - s * x2 - cx * x3) / fx;
+
+    t = rho * Vector3D(x1, x2, x3);
+
+    return true;
 }
 
 
@@ -152,5 +233,12 @@ int main()
     Matrix M = solve_M_from_P(P);
 
     check_projection(coord_result, M);
+
+    double fx, fy, cx, cy, s, rho;
+    if (!intrinsics_from_M(M, fx, fy, cx, cy, s, rho)) return false;
+
+    Matrix33 R;
+    Vector3D t;
+    if (!extrinsics_from_M(M, fx, fy, cx, cy, s, rho, R, t)) return false;
 
 }
