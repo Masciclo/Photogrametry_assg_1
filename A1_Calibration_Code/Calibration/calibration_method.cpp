@@ -378,18 +378,22 @@ bool Calibration::calibration(                  /// Calibration CLASS defined in
 
     Matrix34 M_matrix = solve_M_from_P(P_matrix); // the camera parameter matrix!
 
-    // Check if the matrix projects 3D point to pixel coordinate!
-    double threshold = 1.0;
+    // Check if the matrix projects 3D point to pixel coordinate! Can be due to bad measurements or degenerate sample
+    double threshold = 10.0;
 
+    double SSE = 0;
     for (size_t i = 0; i < points_3d.size(); ++i) {
         Vector3D p_homo = M_matrix * points_3d[i].homogeneous();
         Vector2D p_proj = p_homo.cartesian();
         double error = (p_proj - points_2d[i]).length(); // magnitude of the vector!
+        SSE += error * error;
         if (error > threshold) {
             std::cerr << "Calibration failed. Results are invalid." << std::endl;
             return false;
         }
     }
+
+    double MSE = SSE / n;
 
     // TODO: extract intrinsic parameters from M.
 
@@ -426,7 +430,12 @@ bool Calibration::calibration(                  /// Calibration CLASS defined in
     // For the translation vector, we can format it nicely with brackets
     std::cout << "Translation Vector (t):\n";
     std::cout << "[" << t.x() << ", " << t.y() << ", " << t.z() << "]\n";
+
+    std::cout <<"The Mean Squared Error for this dataset is: " << MSE << std::endl;
+
     std::cout << "=======================================\n\n";
+
+
 
     return true;
 }
