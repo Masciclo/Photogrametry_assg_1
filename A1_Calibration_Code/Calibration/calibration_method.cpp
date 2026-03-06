@@ -156,9 +156,7 @@ bool extrinsics_from_M(const Matrix34& M,
                  r2.x(), r2.y(), r2.z(),
                  r3.x(), r3.y(), r3.z());
 
-    double detR = R(0,0)*(R(1,1)*R(2,2) - R(1,2)*R(2,1))
-            - R(0,1)*(R(1,0)*R(2,2) - R(1,2)*R(2,0))
-            + R(0,2)*(R(1,0)*R(2,1) - R(1,1)*R(2,0));
+    double detR = determinant(R);
 
     if (detR < 0) {
         rho = -rho;
