@@ -78,7 +78,7 @@ Matrix34 solve_M_from_P(const Matrix& P) {
     svd_decompose(P, U, S, V);
 
     // the last column (the solution vector m)
-    // V.cols() - 1 is index 11
+    // columns - 1 is index 11
     Vector m = V.get_column(11);
 
     // From LiangLiang's helper notes! Much faster.
