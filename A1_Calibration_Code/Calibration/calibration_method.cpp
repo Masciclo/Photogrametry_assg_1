@@ -391,7 +391,7 @@ bool Calibration::calibration(                  /// Calibration CLASS defined in
         }
     }
 
-    double MSE = SSE / n;
+    double MSE = SSE / static_cast<double>(points_3d.size());
 
     // TODO: extract intrinsic parameters from M.
 
