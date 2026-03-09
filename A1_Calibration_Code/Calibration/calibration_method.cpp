@@ -28,12 +28,6 @@
 
 using namespace easy3d; // checks if unknown functions are included in easy3d library, used mostly in .cpp
 
-/**
- * TODO: Finish this function for calibrating a camera from the corresponding 3D-2D point pairs.
- *       You may define a few functions for some sub-tasks.
- * @return True on success, otherwise false. On success, the camera parameters are returned by fx, fy, cx, cy, skew, R, and t).
- */
-
 // =============================== HELPER FUNCTIONS ====================================
 
 
